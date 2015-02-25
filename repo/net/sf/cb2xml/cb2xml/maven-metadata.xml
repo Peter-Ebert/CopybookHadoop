@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>net.sf.cb2xml</groupId>
+  <artifactId>cb2xml</artifactId>
+  <versioning>
+    <release>0.80.8-jrecord</release>
+    <versions>
+      <version>0.80.8-jrecord</version>
+    </versions>
+    <lastUpdated>20150224234328</lastUpdated>
+  </versioning>
+</metadata>
