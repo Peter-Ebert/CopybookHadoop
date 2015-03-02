@@ -35,7 +35,7 @@ public class CopybookRecordReader implements RecordReader<LongWritable, Text> {
 
   AbstractLineReader ret;
   ExternalRecord externalRecord;
-  
+
   private static String fieldDelimiter = new Character((char) 0x01).toString();
 
   public CopybookRecordReader(FileSplit genericSplit, JobConf job)
@@ -48,12 +48,15 @@ public class CopybookRecordReader implements RecordReader<LongWritable, Text> {
           MapWork mrwork = Utilities.getMapWork(job);
 
           if (mrwork == null) {
-            System.out.println("When running a client side hive job you have to set \"copybook.inputformat.cbl.hdfs.path\" before executing the query." );
-            System.out.println("When running a MR job we can get this from the hive TBLProperties" );
+            System.out.println(
+                "When running a client side hive job you have to set \"copybook.inputformat.cbl.hdfs.path\" before executing the query.");
+            System.out.println(
+                "When running a MR job we can get this from the hive TBLProperties");
           }
           Map<String, PartitionDesc> map = mrwork.getPathToPartitionInfo();
-          
-          for (Map.Entry<String, PartitionDesc> pathsAndParts : map.entrySet()) {
+
+          for (Map.Entry<String, PartitionDesc> pathsAndParts : map
+              .entrySet()) {
             System.out.println("Hey");
             Properties props = pathsAndParts.getValue().getProperties();
             cblPath = props
@@ -101,51 +104,51 @@ public class CopybookRecordReader implements RecordReader<LongWritable, Text> {
       ret.open(fileIn, externalRecord);
     } catch (Exception e) {
       e.printStackTrace();
-    } 
+    }
 
   }
 
   public boolean next(LongWritable key, Text value) throws IOException {
-    
+
     System.out.println("next");
     try {
-    if (pos >= end) {
-      return false;
-    }
-
-    if (key == null) {
-      key = new LongWritable();
-    }
-    if (value == null) {
-      value = new Text();
-    }
-
-    // int result = fileIn.read(mainframeRecord);
-
-    AbstractLine line = ret.read();
-
-    if (line == null) {
-      return false;
-    }
-
-    pos += recordByteLength;
-
-    key.set(pos);
-
-    StringBuilder strBuilder = new StringBuilder();
-
-    boolean isFirst = true;
-    int i = 0;
-    for (ExternalField field : externalRecord.getRecordFields()) {
-      if (isFirst) {
-        isFirst = false;
-      } else {
-        strBuilder.append(fieldDelimiter);
+      if (pos >= end) {
+        return false;
       }
-      strBuilder.append(line.getFieldValue(0, i++));
-    }
 
-    value.set(strBuilder.toString());
+      if (key == null) {
+        key = new LongWritable();
+      }
+      if (value == null) {
+        value = new Text();
+      }
+
+      // int result = fileIn.read(mainframeRecord);
+
+      AbstractLine line = ret.read();
+
+      if (line == null) {
+        return false;
+      }
+
+      pos += recordByteLength;
+
+      key.set(pos);
+
+      StringBuilder strBuilder = new StringBuilder();
+
+      boolean isFirst = true;
+      int i = 0;
+      for (ExternalField field : externalRecord.getRecordFields()) {
+        if (isFirst) {
+          isFirst = false;
+        } else {
+          strBuilder.append(fieldDelimiter);
+        }
+        strBuilder.append(line.getFieldValue(0, i++));
+      }
+
+      value.set(strBuilder.toString());
     } catch (Exception e) {
       e.printStackTrace();
     }

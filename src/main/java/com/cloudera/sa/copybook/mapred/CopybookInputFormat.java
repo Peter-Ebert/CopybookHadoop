@@ -8,9 +8,10 @@ import java.io.IOException;
 
 public class CopybookInputFormat extends FileInputFormat<LongWritable, Text> {
 
-	@Override
-	public RecordReader<LongWritable, Text> getRecordReader(InputSplit split,
-			JobConf job, Reporter reporter) throws IOException {
-	  return new CopybookRecordReader((FileSplit)split, job);
-	}
+  @Override
+  public RecordReader<LongWritable, Text> getRecordReader(InputSplit split,
+                                                          JobConf job,
+                                                          Reporter reporter) throws IOException {
+    return new CopybookRecordReader((FileSplit) split, job);
+  }
 }

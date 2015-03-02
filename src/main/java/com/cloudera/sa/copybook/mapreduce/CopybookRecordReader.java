@@ -38,7 +38,8 @@ public class CopybookRecordReader extends RecordReader<LongWritable, Text> {
   String fieldDelimiter;
 
   private String parseFieldDelimiter(String fieldDelimiter) {
-    Preconditions.checkArgument(!fieldDelimiter.isEmpty(), "Cannot specify an empty field delimiter");
+    Preconditions.checkArgument(!fieldDelimiter.isEmpty(),
+        "Cannot specify an empty field delimiter");
 
     if (fieldDelimiter.startsWith("0x")) {
       int codePoint = Integer.valueOf(fieldDelimiter.substring(2), 16);
@@ -56,7 +57,8 @@ public class CopybookRecordReader extends RecordReader<LongWritable, Text> {
         Const.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF);
 
     fieldDelimiter = context.getConfiguration().get(
-        Const.COPYBOOK_INPUTFORMAT_OUTPUT_DELIMITER, Const.DEFAULT_OUTPUT_DELIMITER);
+        Const.COPYBOOK_INPUTFORMAT_OUTPUT_DELIMITER,
+        Const.DEFAULT_OUTPUT_DELIMITER);
 
     FileSystem fs = FileSystem.get(context.getConfiguration());
 
