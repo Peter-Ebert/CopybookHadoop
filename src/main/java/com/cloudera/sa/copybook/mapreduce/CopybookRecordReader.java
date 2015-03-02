@@ -1,5 +1,6 @@
 package com.cloudera.sa.copybook.mapreduce;
 
+import com.clearspring.analytics.util.Preconditions;
 import com.cloudera.sa.copybook.Const;
 import net.sf.JRecord.Common.Constants;
 import net.sf.JRecord.Details.AbstractLine;
@@ -34,7 +35,18 @@ public class CopybookRecordReader extends RecordReader<LongWritable, Text> {
 
   AbstractLineReader ret;
   ExternalRecord externalRecord;
-  private static String fieldDelimiter = new Character((char) 0x01).toString();
+  String fieldDelimiter;
+
+  private String parseFieldDelimiter(String fieldDelimiter) {
+    Preconditions.checkArgument(!fieldDelimiter.isEmpty(), "Cannot specify an empty field delimiter");
+
+    if (fieldDelimiter.startsWith("0x")) {
+      int codePoint = Integer.valueOf(fieldDelimiter.substring(2), 16);
+      return new Character((char) codePoint).toString();
+    } else {
+      return fieldDelimiter;
+    }
+  }
 
   @Override
   public void initialize(InputSplit split, TaskAttemptContext context)
@@ -42,6 +54,9 @@ public class CopybookRecordReader extends RecordReader<LongWritable, Text> {
 
     String cblPath = context.getConfiguration().get(
         Const.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF);
+
+    fieldDelimiter = context.getConfiguration().get(
+        Const.COPYBOOK_INPUTFORMAT_OUTPUT_DELIMITER, Const.DEFAULT_OUTPUT_DELIMITER);
 
     FileSystem fs = FileSystem.get(context.getConfiguration());
 
