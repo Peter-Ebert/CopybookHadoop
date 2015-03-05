@@ -1,15 +1,12 @@
 package com.cloudera.sa.copybook.mapred;
 
-import com.cloudera.sa.copybook.Const;
-import net.sf.JRecord.Common.Constants;
+import com.cloudera.sa.copybook.common.Constants;
+import com.cloudera.sa.copybook.common.CopybookIOUtils;
+import com.google.common.base.Preconditions;
 import net.sf.JRecord.Details.AbstractLine;
-import net.sf.JRecord.External.CobolCopybookLoader;
-import net.sf.JRecord.External.CopybookLoader;
 import net.sf.JRecord.External.Def.ExternalField;
 import net.sf.JRecord.External.ExternalRecord;
 import net.sf.JRecord.IO.AbstractLineReader;
-import net.sf.JRecord.IO.LineIOProvider;
-import net.sf.JRecord.Numeric.Convert;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.ql.exec.Utilities;
@@ -36,12 +33,25 @@ public class CopybookRecordReader implements RecordReader<LongWritable, Text> {
   AbstractLineReader ret;
   ExternalRecord externalRecord;
 
-  private static String fieldDelimiter = new Character((char) 0x01).toString();
+  String fieldDelimiter;
 
   public CopybookRecordReader(FileSplit genericSplit, JobConf job)
       throws IOException {
     try {
-      String cblPath = job.get(Const.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF);
+      // Get configuration
+      String cblPath = job.get(
+          Constants.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF);
+
+      fieldDelimiter = CopybookIOUtils.parseFieldDelimiter(
+          job.get(Constants.COPYBOOK_INPUTFORMAT_FIELD_DELIMITER,
+              Constants.DEFAULT_OUTPUT_DELIMITER));
+
+      int fileStructure = job.getInt(
+          Constants.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE,
+          Constants.DEFAULT_FILE_STRUCTURE);
+      Preconditions.checkArgument(
+          Constants.SUPPORTED_FILE_STRUCTURES.contains(fileStructure),
+          "Supported file structures: " + Constants.SUPPORTED_FILE_STRUCTURES);
 
       if (cblPath == null) {
         if (job != null) {
@@ -49,7 +59,9 @@ public class CopybookRecordReader implements RecordReader<LongWritable, Text> {
 
           if (mrwork == null) {
             System.out.println(
-                "When running a client side hive job you have to set \"copybook.inputformat.cbl.hdfs.path\" before executing the query.");
+                "When running a client side hive job you have to set " +
+                    Constants.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF +
+                    " before executing the query.");
             System.out.println(
                 "When running a MR job we can get this from the hive TBLProperties");
           }
@@ -57,60 +69,48 @@ public class CopybookRecordReader implements RecordReader<LongWritable, Text> {
 
           for (Map.Entry<String, PartitionDesc> pathsAndParts : map
               .entrySet()) {
-            System.out.println("Hey");
             Properties props = pathsAndParts.getValue().getProperties();
-            cblPath = props
-                .getProperty(Const.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF);
+            cblPath = props.getProperty(
+                Constants.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF);
             break;
           }
         }
       }
 
+      // Open InputStream to Cobol layout file on HDFS
       FileSystem fs = FileSystem.get(job);
-      BufferedInputStream inputStream = new BufferedInputStream(
-          fs.open(new Path(cblPath)));
-      CobolCopybookLoader copybookInt = new CobolCopybookLoader();
-      externalRecord = copybookInt
-          .loadCopyBook(inputStream, "RR", CopybookLoader.SPLIT_NONE, 0,
-              "cp037", Convert.FMT_MAINFRAME, 0, null);
+      BufferedInputStream inputStream = new BufferedInputStream(fs.open(new Path(
+          cblPath)));
 
-      int fileStructure = Constants.IO_FIXED_LENGTH;
+      externalRecord = CopybookIOUtils.getExternalRecord(inputStream);
+      recordByteLength = CopybookIOUtils
+          .getRecordLength(externalRecord, fileStructure);
 
-      for (ExternalField field : externalRecord.getRecordFields()) {
-        recordByteLength += field.getLen();
-      }
+      FileSplit fileSplit = (FileSplit) genericSplit;
 
-      // jump to the point in the split that the first whole record of split
-      // starts at
-      FileSplit split = (FileSplit) genericSplit;
+      start = fileSplit.getStart();
+      end = start + fileSplit.getLength();
 
-      start = split.getStart();
-      end = start + split.getLength();
-      final Path file = split.getPath();
-
-      BufferedInputStream fileIn = new BufferedInputStream(fs.open(split
+      BufferedInputStream fileIn = new BufferedInputStream(fs.open(fileSplit
           .getPath()));
 
+      // Jump to the point in the split at which the first
+      // whole record of split starts if not the first InputSplit
       if (start != 0) {
         pos = start - (start % recordByteLength) + recordByteLength;
-
         fileIn.skip(pos);
       }
 
-      ret = LineIOProvider.getInstance().getLineReader(
-          fileStructure,
-          LineIOProvider.getInstance().getLineProvider());
-
-      ret.open(fileIn, externalRecord);
+      ret = CopybookIOUtils.getAndOpenLineReader(fileIn, fileStructure,
+          externalRecord);
     } catch (Exception e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
 
   }
 
   public boolean next(LongWritable key, Text value) throws IOException {
 
-    System.out.println("next");
     try {
       if (pos >= end) {
         return false;
@@ -122,8 +122,6 @@ public class CopybookRecordReader implements RecordReader<LongWritable, Text> {
       if (value == null) {
         value = new Text();
       }
-
-      // int result = fileIn.read(mainframeRecord);
 
       AbstractLine line = ret.read();
 
@@ -150,7 +148,7 @@ public class CopybookRecordReader implements RecordReader<LongWritable, Text> {
 
       value.set(strBuilder.toString());
     } catch (Exception e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
     return true;
   }

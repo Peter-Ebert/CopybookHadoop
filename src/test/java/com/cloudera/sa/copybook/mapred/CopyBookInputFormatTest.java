@@ -1,15 +1,12 @@
-package com.cloudera.sa.copybook.mapreduce;
+package com.cloudera.sa.copybook.mapred;
 
 import com.cloudera.sa.copybook.common.Constants;
 import com.cloudera.sa.copybook.common.TestUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapreduce.InputFormat;
-import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.TaskAttemptID;
-import org.apache.hadoop.mapreduce.lib.input.FileSplit;
-import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -24,7 +21,7 @@ public class CopyBookInputFormatTest {
 
   private TestUtils testUtils;
 
-  public static RecordReader getRecordReader(String cobolLocation,
+  public static RecordReader<LongWritable, Text> getRecordReader(String cobolLocation,
                                              String datafileLocation,
                                              String delimiter,
                                              int fileFormat) throws IOException, InterruptedException {
@@ -36,17 +33,13 @@ public class CopyBookInputFormatTest {
 
     File testFile = new File(datafileLocation);
     Path path = new Path(testFile.getAbsoluteFile().toURI());
-    FileSplit split = new FileSplit(path, 0, testFile.length(), null);
+    FileSplit split = new FileSplit(path, 0, testFile.length(), new String[] {});
 
     InputFormat inputFormat = ReflectionUtils
         .newInstance(CopybookInputFormat.class, conf);
-    TaskAttemptContext context = new TaskAttemptContextImpl(conf,
-        new TaskAttemptID());
+    JobConf jobConf = new JobConf(conf);
 
-    RecordReader reader = inputFormat.createRecordReader(split, context);
-    reader.initialize(split, context);
-
-    return reader;
+    return inputFormat.getRecordReader(split, jobConf, Reporter.NULL);
   }
 
   @Before
@@ -62,30 +55,32 @@ public class CopyBookInputFormatTest {
 
   @Test
   public void testFixedRecordReader() throws IOException, InterruptedException {
-    RecordReader reader = getRecordReader(testUtils.getCobolFileLocation(),
+    RecordReader<LongWritable, Text> reader = getRecordReader(testUtils.getCobolFileLocation(),
         testUtils.getTestFixedLengthFileLocation(), "0x01",
         net.sf.JRecord.Common.Constants.IO_FIXED_LENGTH);
 
     int counter = 0;
-    while (reader.nextKeyValue()) {
+    LongWritable key = reader.createKey();
+    Text value = reader.createValue();
+    while (reader.next(key,value)) {
       counter++;
-      System.out
-          .println(reader.getCurrentKey() + "::\t" + reader.getCurrentValue());
+      System.out.println(key + "::\t" + value);
     }
     assertEquals(testUtils.getTestDataLength(), counter);
   }
 
   @Test
   public void testVbRecordReader() throws IOException, InterruptedException {
-    RecordReader reader = getRecordReader(testUtils.getCobolFileLocation(),
+    RecordReader<LongWritable, Text> reader = getRecordReader(testUtils.getCobolFileLocation(),
         testUtils.getTestVbFileLocation(), "0x01",
         net.sf.JRecord.Common.Constants.IO_VB);
 
     int counter = 0;
-    while (reader.nextKeyValue()) {
+    LongWritable key = reader.createKey();
+    Text value = reader.createValue();
+    while (reader.next(key, value)) {
       counter++;
-      System.out
-          .println(reader.getCurrentKey() + "::\t" + reader.getCurrentValue());
+      System.out.println(key + "::\t" + value);
     }
     assertEquals(testUtils.getTestDataLength(), counter);
   }

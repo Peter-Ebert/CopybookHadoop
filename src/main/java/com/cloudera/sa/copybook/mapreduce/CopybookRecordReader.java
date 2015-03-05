@@ -1,16 +1,12 @@
 package com.cloudera.sa.copybook.mapreduce;
 
 import com.clearspring.analytics.util.Preconditions;
-import com.cloudera.sa.copybook.Const;
-import net.sf.JRecord.Common.Constants;
+import com.cloudera.sa.copybook.common.Constants;
+import com.cloudera.sa.copybook.common.CopybookIOUtils;
 import net.sf.JRecord.Details.AbstractLine;
-import net.sf.JRecord.External.CobolCopybookLoader;
-import net.sf.JRecord.External.CopybookLoader;
 import net.sf.JRecord.External.Def.ExternalField;
 import net.sf.JRecord.External.ExternalRecord;
 import net.sf.JRecord.IO.AbstractLineReader;
-import net.sf.JRecord.IO.LineIOProvider;
-import net.sf.JRecord.Numeric.Convert;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -36,69 +32,55 @@ public class CopybookRecordReader extends RecordReader<LongWritable, Text> {
   AbstractLineReader ret;
   ExternalRecord externalRecord;
   String fieldDelimiter;
-
-  private String parseFieldDelimiter(String fieldDelimiter) {
-    Preconditions.checkArgument(!fieldDelimiter.isEmpty(),
-        "Cannot specify an empty field delimiter");
-
-    if (fieldDelimiter.startsWith("0x")) {
-      int codePoint = Integer.valueOf(fieldDelimiter.substring(2), 16);
-      return new Character((char) codePoint).toString();
-    } else {
-      return fieldDelimiter;
-    }
-  }
+  int fileStructure;
 
   @Override
   public void initialize(InputSplit split, TaskAttemptContext context)
       throws IOException, InterruptedException {
 
+    // Get configuration
     String cblPath = context.getConfiguration().get(
-        Const.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF);
+        Constants.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF);
 
-    fieldDelimiter = context.getConfiguration().get(
-        Const.COPYBOOK_INPUTFORMAT_OUTPUT_DELIMITER,
-        Const.DEFAULT_OUTPUT_DELIMITER);
+    fieldDelimiter = CopybookIOUtils.parseFieldDelimiter(
+        context.getConfiguration().get(
+            Constants.COPYBOOK_INPUTFORMAT_FIELD_DELIMITER,
+            Constants.DEFAULT_OUTPUT_DELIMITER));
 
+    fileStructure = context.getConfiguration().getInt(
+        Constants.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE,
+        Constants.DEFAULT_FILE_STRUCTURE);
+    Preconditions.checkArgument(
+        Constants.SUPPORTED_FILE_STRUCTURES.contains(fileStructure),
+        "Supported file structures: " + Constants.SUPPORTED_FILE_STRUCTURES);
+
+    // Open InputStream to Cobol layout file on HDFS
     FileSystem fs = FileSystem.get(context.getConfiguration());
-
     BufferedInputStream inputStream = new BufferedInputStream(fs.open(new Path(
         cblPath)));
 
-    CobolCopybookLoader copybookInt = new CobolCopybookLoader();
     try {
-      externalRecord = copybookInt
-          .loadCopyBook(inputStream, "RR", CopybookLoader.SPLIT_NONE, 0,
-              "cp037", Convert.FMT_MAINFRAME, 0, null);
+      externalRecord = CopybookIOUtils.getExternalRecord(inputStream);
+      recordByteLength = CopybookIOUtils
+          .getRecordLength(externalRecord, fileStructure);
 
-      int fileStructure = Constants.IO_FIXED_LENGTH;
-
-      for (ExternalField field : externalRecord.getRecordFields()) {
-        recordByteLength += field.getLen();
-      }
-
-      // jump to the point in the split that the first whole record of split
-      // starts at
       FileSplit fileSplit = (FileSplit) split;
 
       start = fileSplit.getStart();
       end = start + fileSplit.getLength();
-      final Path file = fileSplit.getPath();
 
       BufferedInputStream fileIn = new BufferedInputStream(fs.open(fileSplit
           .getPath()));
 
+      // Jump to the point in the split at which the first
+      // whole record of split starts if not the first InputSplit
       if (start != 0) {
         pos = start - (start % recordByteLength) + recordByteLength;
-
         fileIn.skip(pos);
       }
 
-      ret = LineIOProvider.getInstance().getLineReader(
-          fileStructure,
-          LineIOProvider.getInstance().getLineProvider());
-
-      ret.open(fileIn, externalRecord);
+      ret = CopybookIOUtils.getAndOpenLineReader(fileIn, fileStructure,
+          externalRecord);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

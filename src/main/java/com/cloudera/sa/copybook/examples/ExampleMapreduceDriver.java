@@ -1,6 +1,6 @@
 package com.cloudera.sa.copybook.examples;
 
-import com.cloudera.sa.copybook.Const;
+import com.cloudera.sa.copybook.common.Constants;
 import com.cloudera.sa.copybook.mapreduce.CopybookInputFormat;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -44,7 +44,7 @@ public class ExampleMapreduceDriver extends Configured implements Tool {
     job.setJarByClass(ExampleMapreduceDriver.class);
     job.setNumReduceTasks(0);
     job.getConfiguration()
-        .set(Const.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF, args[0]);
+        .set(Constants.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF, args[0]);
 
     // I/O formats
     job.setInputFormatClass(CopybookInputFormat.class);
