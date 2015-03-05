@@ -2,6 +2,7 @@ package com.cloudera.sa.copybook.examples;
 
 import com.cloudera.sa.copybook.common.Constants;
 import com.cloudera.sa.copybook.mapreduce.CopybookInputFormat;
+
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -17,6 +18,11 @@ import org.apache.hadoop.util.ToolRunner;
 import java.io.IOException;
 
 public class ExampleMapreduceDriver extends Configured implements Tool {
+  
+  private enum Type {
+    FB,
+    VB
+  }
 
   public static class CopybookIdentityMapper extends Mapper<LongWritable, Text, Text, Text> {
 
@@ -32,11 +38,14 @@ public class ExampleMapreduceDriver extends Configured implements Tool {
 
   @Override
   public int run(String[] args) throws Exception {
-    if (args.length < 2) {
-      System.err.printf("%s <copybookloc> <input> <output>\n",
+    if (args.length < 4) {
+      System.err.printf("%s <copybookloc> <input> <output> {fb|vb}>\n",
           this.getClass().getName());
       return -1;
     }
+    
+    // Check format
+    Type type = Type.valueOf(args[3].toUpperCase());
 
     // General config
     Job job = Job.getInstance(getConf());
@@ -45,6 +54,13 @@ public class ExampleMapreduceDriver extends Configured implements Tool {
     job.setNumReduceTasks(0);
     job.getConfiguration()
         .set(Constants.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF, args[0]);
+    if (type.equals(Type.FB)) {
+      job.getConfiguration().set(Constants.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE,
+    		  Integer.toString(net.sf.JRecord.Common.Constants.IO_FIXED_LENGTH));
+    } else if (type.equals(Type.VB)) {
+      job.getConfiguration().set(Constants.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE,
+              Integer.toString(net.sf.JRecord.Common.Constants.IO_VB));
+    }
 
     // I/O formats
     job.setInputFormatClass(CopybookInputFormat.class);
