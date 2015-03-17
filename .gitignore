@@ -5,3 +5,4 @@ target/
 .classpath
 .settings/
 src/test/resources/sample.*
+dependency-reduced-pom.xml
