@@ -6,7 +6,7 @@
 
     <groupId>com.cloudera.sa</groupId>
     <artifactId>copybook-hadoop</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.3</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -15,6 +15,7 @@
         <hadoop.version>2.5.0-cdh5.3.1</hadoop.version>
         <spark.version>1.2.0-cdh5.3.1</spark.version>
         <hive.version>0.13.1-cdh5.3.1</hive.version>
+        <maven.compiler.version>3.2</maven.compiler.version>
         <maven.assembly.version>2.5.3</maven.assembly.version>
         <maven.shade.version>2.3</maven.shade.version>
     </properties>
@@ -39,11 +40,13 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-client</artifactId>
             <version>${hadoop.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.10</artifactId>
             <version>${spark.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.hive</groupId>
@@ -65,10 +68,19 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven.compiler.version}</version>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                </configuration>
+            </plugin>
+            <plugin>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>${maven.shade.version}</version>
                 <configuration>
-                  <minimizeJar>true</minimizeJar>
+                  <!-- <minimizeJar>true</minimizeJar>-->
                   <filters>
                     <filter>
                       <artifact>*:*</artifact>

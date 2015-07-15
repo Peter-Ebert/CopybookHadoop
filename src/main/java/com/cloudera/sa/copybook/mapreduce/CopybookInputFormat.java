@@ -16,7 +16,7 @@ public class CopybookInputFormat extends FileInputFormat<LongWritable, Text> {
   @Override
   public RecordReader<LongWritable, Text> createRecordReader(InputSplit split,
                                                              TaskAttemptContext context)
-      throws IOException, InterruptedException {
+    throws IOException, InterruptedException {
     return new CopybookRecordReader();
   }
 

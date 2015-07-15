@@ -22,17 +22,17 @@ import java.io.InputStream;
 public class CopybookIOUtils {
 
   public static ExternalRecord getExternalRecord(
-      InputStream cblIs) throws RecordException {
+    InputStream cblIs) throws RecordException {
     CommonBits.setDefaultCobolTextFormat(Cb2xmlConstants.USE_STANDARD_COLUMNS);
     CobolCopybookLoader copybookInt = new CobolCopybookLoader();
     return copybookInt.loadCopyBook(cblIs,
-        "",
-        CopybookLoader.SPLIT_NONE,
-        0,
-        "cp037",
-        Convert.FMT_MAINFRAME,
-        0,
-        null);
+      "",
+      CopybookLoader.SPLIT_NONE,
+      0,
+      "cp037",
+      Convert.FMT_MAINFRAME,
+      0,
+      null);
   }
 
   public static int getRecordLength(ExternalRecord externalRecord,
@@ -51,11 +51,11 @@ public class CopybookIOUtils {
                                                         int fileStructure,
                                                         ExternalRecord externalRecord) throws RecordException, IOException {
     LineProvider lineProvider = LineIOProvider.getInstance()
-        .getLineProvider(fileStructure, "cp037");
+      .getLineProvider(fileStructure, "cp037");
     AbstractLineReader reader = LineIOProvider.getInstance()
-        .getLineReader(fileStructure, lineProvider);
+      .getLineReader(fileStructure, lineProvider);
     LayoutDetail copyBook = ToLayoutDetail.getInstance()
-        .getLayout(externalRecord);
+      .getLayout(externalRecord);
 
     reader.open(is, copyBook);
     return reader;
@@ -63,7 +63,7 @@ public class CopybookIOUtils {
 
   public static String parseFieldDelimiter(String fieldDelimiter) {
     Preconditions.checkArgument(!fieldDelimiter.isEmpty(),
-        "Cannot specify an empty field delimiter");
+      "Cannot specify an empty field delimiter");
 
     if (fieldDelimiter.startsWith("0x")) {
       int codePoint = Integer.valueOf(fieldDelimiter.substring(2), 16);

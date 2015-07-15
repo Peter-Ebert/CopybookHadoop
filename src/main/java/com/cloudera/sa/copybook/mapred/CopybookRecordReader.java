@@ -36,22 +36,22 @@ public class CopybookRecordReader implements RecordReader<LongWritable, Text> {
   String fieldDelimiter;
 
   public CopybookRecordReader(FileSplit genericSplit, JobConf job)
-      throws IOException {
+    throws IOException {
     try {
       // Get configuration
       String cblPath = job.get(
-          Constants.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF);
+        Constants.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF);
 
       fieldDelimiter = CopybookIOUtils.parseFieldDelimiter(
-          job.get(Constants.COPYBOOK_INPUTFORMAT_FIELD_DELIMITER,
-              Constants.DEFAULT_OUTPUT_DELIMITER));
+        job.get(Constants.COPYBOOK_INPUTFORMAT_FIELD_DELIMITER,
+          Constants.DEFAULT_OUTPUT_DELIMITER));
 
       int fileStructure = job.getInt(
-          Constants.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE,
-          Constants.DEFAULT_FILE_STRUCTURE);
+        Constants.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE,
+        Constants.DEFAULT_FILE_STRUCTURE);
       Preconditions.checkArgument(
-          Constants.SUPPORTED_FILE_STRUCTURES.contains(fileStructure),
-          "Supported file structures: " + Constants.SUPPORTED_FILE_STRUCTURES);
+        Constants.SUPPORTED_FILE_STRUCTURES.contains(fileStructure),
+        "Supported file structures: " + Constants.SUPPORTED_FILE_STRUCTURES);
 
       if (cblPath == null) {
         if (job != null) {
@@ -59,19 +59,19 @@ public class CopybookRecordReader implements RecordReader<LongWritable, Text> {
 
           if (mrwork == null) {
             System.out.println(
-                "When running a client side hive job you have to set " +
-                    Constants.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF +
-                    " before executing the query.");
+              "When running a client side hive job you have to set " +
+                Constants.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF +
+                " before executing the query.");
             System.out.println(
-                "When running a MR job we can get this from the hive TBLProperties");
+              "When running a MR job we can get this from the hive TBLProperties");
           }
           Map<String, PartitionDesc> map = mrwork.getPathToPartitionInfo();
 
           for (Map.Entry<String, PartitionDesc> pathsAndParts : map
-              .entrySet()) {
+            .entrySet()) {
             Properties props = pathsAndParts.getValue().getProperties();
             cblPath = props.getProperty(
-                Constants.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF);
+              Constants.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF);
             break;
           }
         }
@@ -80,11 +80,11 @@ public class CopybookRecordReader implements RecordReader<LongWritable, Text> {
       // Open InputStream to Cobol layout file on HDFS
       FileSystem fs = FileSystem.get(job);
       BufferedInputStream inputStream = new BufferedInputStream(fs.open(new Path(
-          cblPath)));
+        cblPath)));
 
       externalRecord = CopybookIOUtils.getExternalRecord(inputStream);
       recordByteLength = CopybookIOUtils
-          .getRecordLength(externalRecord, fileStructure);
+        .getRecordLength(externalRecord, fileStructure);
 
       FileSplit fileSplit = (FileSplit) genericSplit;
 
@@ -92,7 +92,7 @@ public class CopybookRecordReader implements RecordReader<LongWritable, Text> {
       end = start + fileSplit.getLength();
 
       BufferedInputStream fileIn = new BufferedInputStream(fs.open(fileSplit
-          .getPath()));
+        .getPath()));
 
       // Jump to the point in the split at which the first
       // whole record of split starts if not the first InputSplit
@@ -102,7 +102,7 @@ public class CopybookRecordReader implements RecordReader<LongWritable, Text> {
       }
 
       ret = CopybookIOUtils.getAndOpenLineReader(fileIn, fileStructure,
-          externalRecord);
+        externalRecord);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

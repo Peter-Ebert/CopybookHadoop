@@ -45,28 +45,31 @@ public class BasicCopybookConvert {
 
     CommonBits.setDefaultCobolTextFormat(Cb2xmlConstants.USE_STANDARD_COLUMNS);
 
+    System.err.printf("CB: %s, Data: %s, Format: %d, Out: %s\n", copybookFilename,
+      dataFilename, fileStructure, outputFilename);
+
     LineProvider lineProvider = LineIOProvider.getInstance()
-        .getLineProvider(fileStructure, codePage);
+      .getLineProvider(fileStructure, codePage);
     AbstractLineReader reader = LineIOProvider.getInstance()
-        .getLineReader(fileStructure, lineProvider);
+      .getLineReader(fileStructure, lineProvider);
 
     CopybookLoader copybookLdr = new CobolCopybookLoader();
     ExternalRecord externalRecord = copybookLdr.loadCopyBook(
-        copybookFilename,
-        CopybookLoader.SPLIT_NONE,
-        0,
-        codePage,
-        Convert.FMT_MAINFRAME,
-        0,
-        null
+      copybookFilename,
+      CopybookLoader.SPLIT_NONE,
+      0,
+      codePage,
+      Convert.FMT_MAINFRAME,
+      0,
+      null
     );
 
     LayoutDetail copyBook = ToLayoutDetail.getInstance()
-        .getLayout(externalRecord);
+      .getLayout(externalRecord);
 
     reader.open(dataFilename, copyBook);
 
-    System.out.println(reader.getClass());
+    System.err.println(reader.getClass());
 
     BufferedWriter writer;
     if (null == outputFilename) {
@@ -95,7 +98,7 @@ public class BasicCopybookConvert {
       return args[pos + 1];
     } else {
       System.err.println(
-          "Could not parse argument for option " + args[pos] + ": " + args[pos + 1]);
+        "Could not parse argument for option " + args[pos] + ": " + args[pos + 1]);
       usageAndExit(-1);
     }
     return "";
@@ -103,7 +106,7 @@ public class BasicCopybookConvert {
 
   private static void usageAndExit(int retCode) {
     System.err.println(
-        "Usage: BasicCopybookConvert [-t fixed|vb] [-s <separator>] -c <cbl file> -d <data file> [-o <output file>]");
+      "Usage: BasicCopybookConvert [-t fixed|vb] [-s <separator>] -c <cbl file> -d <data file> [-o <output file>]");
     System.exit(retCode);
   }
 
@@ -117,9 +120,14 @@ public class BasicCopybookConvert {
     String dataFile = null;
     String outputFile = null;
 
-    for (int i = 1; i < args.length; i++) {
+    for (int i = 0; i < args.length; i++) {
       if (args[i].equals("-t")) {
-        convert.fileStructure(Integer.parseInt(getOptionArg(args, i)));
+        String type = getOptionArg(args, i);
+        if (type.equals("fixed")) {
+          convert.fileStructure(Constants.IO_FIXED_LENGTH);
+        } else if (type.equals("vb")) {
+          convert.fileStructure(Constants.IO_VB);
+        }
       } else if (args[i].equals("-s")) {
         convert.separator(getOptionArg(args, i));
       } else if (args[i].equals("-c")) {
@@ -135,7 +143,6 @@ public class BasicCopybookConvert {
       usageAndExit(-1);
     }
 
-    BasicCopybookConvert converter = new BasicCopybookConvert();
-    converter.convertCopybookData(cobolFile, dataFile, outputFile);
+    convert.convertCopybookData(cobolFile, dataFile, outputFile);
   }
 }
