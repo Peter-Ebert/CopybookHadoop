@@ -2,7 +2,7 @@ package com.cloudera.sa.copybook.examples;
 
 import com.cloudera.sa.copybook.common.Constants;
 import com.cloudera.sa.copybook.mapreduce.CopybookInputFormat;
-
+import com.cloudera.sa.copybook.mapreduce.CopybookVBInputFormat;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -28,7 +28,8 @@ public class TextFileProducer extends Configured implements Tool {
 
   private enum Type {
     FB,
-    VB
+    VB,
+    VBV
   }
 
   public static class CopybookSubstitutionMapper extends Mapper<LongWritable, Text, Text, Text> {
@@ -72,7 +73,7 @@ public class TextFileProducer extends Configured implements Tool {
 
   public int run(String[] args) throws Exception {
     if (args.length < 4) {
-      System.err.printf("%s [options] <copybookloc> <input> <output> {fb|vb}>\n\n%s\n",
+      System.err.printf("%s [options] <copybookloc> <input> <output> {fb|vb|vbv}>\n\n%s\n",
         this.getClass().getName(),
         "Options:\n  -D char.subs=c1:r1,c2:r2");
       return -1;
@@ -91,13 +92,20 @@ public class TextFileProducer extends Configured implements Tool {
     if (type.equals(Type.FB)) {
       job.getConfiguration().set(Constants.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE,
         Integer.toString(net.sf.JRecord.Common.Constants.IO_FIXED_LENGTH));
-    } else if (type.equals(Type.VB)) {
+    } else if (type.equals(Type.VB) || type.equals(Type.VBV)) {
       job.getConfiguration().set(Constants.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE,
         Integer.toString(net.sf.JRecord.Common.Constants.IO_VB));
+    } else {
+      System.err.printf("Unknown file format: %s\n", type);
+      return -1;
     }
 
     // I/O formats
-    job.setInputFormatClass(CopybookInputFormat.class);
+    if (type.equals(Type.VBV)) {
+      job.setInputFormatClass(CopybookVBInputFormat.class);
+    } else {
+      job.setInputFormatClass(CopybookInputFormat.class);
+    }
     job.setOutputFormatClass(TextOutputFormat.class);
 
     // I/O paths
