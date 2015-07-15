@@ -1,8 +1,8 @@
 package com.cloudera.sa.copybook.mapreduce;
 
-import com.clearspring.analytics.util.Preconditions;
 import com.cloudera.sa.copybook.common.Constants;
 import com.cloudera.sa.copybook.common.CopybookIOUtils;
+import com.google.common.base.Preconditions;
 import net.sf.JRecord.Details.AbstractLine;
 import net.sf.JRecord.External.Def.ExternalField;
 import net.sf.JRecord.External.ExternalRecord;
@@ -50,8 +50,8 @@ public class CopybookVBRecordReader extends RecordReader<LongWritable, Text> {
         Constants.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE,
         Constants.DEFAULT_FILE_STRUCTURE);
     Preconditions.checkArgument(
-        Constants.SUPPORTED_FILE_STRUCTURES.contains(fileStructure),
-        "Supported file structures: " + Constants.SUPPORTED_FILE_STRUCTURES);
+      Constants.SUPPORTED_FILE_STRUCTURES.contains(fileStructure),
+      "Supported file structures: " + Constants.SUPPORTED_FILE_STRUCTURES);
 
     // Open InputStream to Cobol layout file on HDFS
     FileSystem fs = FileSystem.get(context.getConfiguration());
