@@ -1,5 +1,6 @@
 package com.cloudera.sa.copybook.util;
 
+import com.cloudera.sa.copybook.common.CopybookIOUtils;
 import net.sf.JRecord.Common.CommonBits;
 import net.sf.JRecord.Common.Constants;
 import net.sf.JRecord.Details.AbstractLine;

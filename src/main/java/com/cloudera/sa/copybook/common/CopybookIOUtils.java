@@ -25,7 +25,7 @@ public class CopybookIOUtils {
     InputStream cblIs) throws RecordException {
     CommonBits.setDefaultCobolTextFormat(Cb2xmlConstants.USE_STANDARD_COLUMNS);
     CobolCopybookLoader copybookInt = new CobolCopybookLoader();
-    return copybookInt.loadCopyBook(cblIs,
+    ExternalRecord rec = copybookInt.loadCopyBook(cblIs,
       "",
       CopybookLoader.SPLIT_NONE,
       0,
@@ -33,6 +33,7 @@ public class CopybookIOUtils {
       Convert.FMT_MAINFRAME,
       0,
       null);
+    return rec;
   }
 
   public static int getRecordLength(ExternalRecord externalRecord,

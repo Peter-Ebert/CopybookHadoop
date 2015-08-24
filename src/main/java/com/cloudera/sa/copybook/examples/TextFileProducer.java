@@ -6,6 +6,7 @@ import com.cloudera.sa.copybook.mapreduce.CopybookVBInputFormat;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -32,15 +33,15 @@ public class TextFileProducer extends Configured implements Tool {
     VBV
   }
 
-  public static class CopybookSubstitutionMapper extends Mapper<LongWritable, Text, Text, Text> {
+  public static class CopybookSubstitutionMapper extends Mapper<LongWritable, Text, NullWritable, Text> {
 
-    private final Text empty = new Text();
+    private final NullWritable empty = NullWritable.get();
     private final Text newValue = new Text();
     private Map<String, String> subsMap = new HashMap<String, String>();
     private boolean hasSubs = false;
 
     @Override
-    protected void setup(Mapper<LongWritable, Text, Text, Text>.Context context)
+    protected void setup(Mapper<LongWritable, Text, NullWritable, Text>.Context context)
       throws IOException, InterruptedException {
       String subsStr = context.getConfiguration().get("char.subs");
       if (null != subsStr && !subsStr.isEmpty()) {
@@ -63,9 +64,9 @@ public class TextFileProducer extends Configured implements Tool {
           valStr = valStr.replaceAll(e.getKey(), e.getValue());
         }
         newValue.set(valStr);
-        context.write(newValue, empty);
+        context.write(empty, newValue);
       } else {
-        context.write(value, empty);
+        context.write(empty, value);
       }
     }
 
@@ -87,8 +88,7 @@ public class TextFileProducer extends Configured implements Tool {
     job.setJobName("JRecord: [" + args[1] + "]");
     job.setJarByClass(TextFileProducer.class);
     job.setNumReduceTasks(0);
-    job.getConfiguration()
-      .set(Constants.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF, args[0]);
+    job.getConfiguration().set(Constants.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF, args[0]);
     if (type.equals(Type.FB)) {
       job.getConfiguration().set(Constants.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE,
         Integer.toString(net.sf.JRecord.Common.Constants.IO_FIXED_LENGTH));
@@ -114,7 +114,7 @@ public class TextFileProducer extends Configured implements Tool {
 
     // MR classes and types
     job.setMapperClass(CopybookSubstitutionMapper.class);
-    job.setOutputKeyClass(Text.class);
+    job.setOutputKeyClass(NullWritable.class);
     job.setOutputValueClass(Text.class);
 
     // Run it

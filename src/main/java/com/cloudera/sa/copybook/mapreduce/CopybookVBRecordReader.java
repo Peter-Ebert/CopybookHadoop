@@ -3,6 +3,7 @@ package com.cloudera.sa.copybook.mapreduce;
 import com.cloudera.sa.copybook.common.Constants;
 import com.cloudera.sa.copybook.common.CopybookIOUtils;
 import com.google.common.base.Preconditions;
+import net.sf.JRecord.Common.FieldDetail;
 import net.sf.JRecord.Details.AbstractLine;
 import net.sf.JRecord.External.Def.ExternalField;
 import net.sf.JRecord.External.ExternalRecord;
@@ -98,16 +99,39 @@ public class CopybookVBRecordReader extends RecordReader<LongWritable, Text> {
     pos += line.getData().length;
 
     StringBuilder strBuilder = new StringBuilder();
-
-    boolean isFirst = true;
+    boolean inPotentialVarcharGroup = false;
+    boolean inVarcharGroup = false;
+    int currentRealPos = 1;
+    int varCharLen = 0;
     int i = 0;
+    int numFields = externalRecord.getRecordFields().length;
     for (ExternalField field : externalRecord.getRecordFields()) {
-      if (isFirst) {
-        isFirst = false;
+      FieldDetail detail = line.getLayout().getField(0, i);
+      if (field.getName().endsWith("-LEN")) {
+        inPotentialVarcharGroup = true;
+        detail.setPosLen(currentRealPos, field.getLen());
+        varCharLen = line.getFieldValue(detail).asInt();
+      } else if (inPotentialVarcharGroup && field.getName().endsWith("-TEXT")) {
+        inVarcharGroup = true;
+        inPotentialVarcharGroup = false;
       } else {
+        // Wasn't a varchar
+        inPotentialVarcharGroup = false;
+      }
+
+      if (inVarcharGroup) {
+        detail.setPosLen(currentRealPos, varCharLen);
+        currentRealPos += varCharLen;
+        inVarcharGroup = false;
+      } else {
+        detail.setPosLen(currentRealPos, field.getLen());
+        currentRealPos += field.getLen();
+      }
+      strBuilder.append(line.getFieldValue(detail).asString());
+      if (i < numFields - 1) {
         strBuilder.append(fieldDelimiter);
       }
-      strBuilder.append(line.getFieldValue(0, i++));
+      i++;
     }
 
     value.set(strBuilder.toString());

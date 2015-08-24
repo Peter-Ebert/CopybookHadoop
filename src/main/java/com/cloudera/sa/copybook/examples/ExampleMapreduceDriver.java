@@ -51,8 +51,8 @@ public class ExampleMapreduceDriver extends Configured implements Tool {
     job.setJobName("Example Copybook format");
     job.setJarByClass(ExampleMapreduceDriver.class);
     job.setNumReduceTasks(0);
-    job.getConfiguration()
-      .set(Constants.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF, args[0]);
+    job.getConfiguration().set(Constants.COPYBOOK_INPUTFORMAT_CBL_HDFS_PATH_CONF, args[0]);
+    job.getConfiguration().set("mapreduce.output.textoutputformat.separator", "");
     if (type.equals(Type.FB)) {
       job.getConfiguration().set(Constants.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE,
         Integer.toString(net.sf.JRecord.Common.Constants.IO_FIXED_LENGTH));
